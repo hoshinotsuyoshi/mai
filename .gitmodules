@@ -1,0 +1,6 @@
+[submodule "mruby"]
+	path = mruby
+	url = https://github.com/mruby/mruby.git
+[submodule "mrbgems/mruby-json"]
+	path = mrbgems/mruby-json
+	url = https://github.com/mattn/mruby-json
