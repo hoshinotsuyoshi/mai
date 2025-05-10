@@ -70,6 +70,12 @@ int main(int argc, char **argv) {
     free(def_state);
   }
 
+  // GEMINI_API_KEY
+  const char *google_api_key = getenv("GEMINI_API_KEY");
+  if (google_api_key) {
+    mrb_define_global_const(mrb, "GEMINI_API_KEY", mrb_str_new_cstr(mrb, google_api_key));
+  }
+
   // execute embedded .mrb
   mrb_load_irep_buf(mrb, src_main_rb_mrb, src_main_rb_mrb_len);
 

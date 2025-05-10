@@ -6,6 +6,70 @@ def config_home
   XDG_CONFIG_HOME || (HOME + "/.config")
 end
 
+module Mi
+
+def self.mi_schema(text)
+  {
+    "contents": [
+      {
+        "parts": [
+          {
+            "text": text,
+          }
+        ]
+      }
+    ],
+    "generationConfig": {
+      "responseMimeType": "application/json",
+      "responseSchema": {
+        "type": "ARRAY",
+        "items": {
+          "type": "OBJECT",
+          "properties": {
+            "recipeName": {
+              "type": "STRING"
+            },
+            "ingredients": {
+              "type": "ARRAY",
+              "items": {
+                "type": "STRING"
+              }
+            }
+          },
+          "propertyOrdering": [
+            "recipeName",
+            "ingredients"
+          ]
+        }
+      }
+    }
+  }.to_json
+end
+
+def self.run(text:)
+  schema = mi_schema(text)
+  cmd = [
+    "curl",
+    "-H",
+    "'Content-Type: application/json'",
+    "-sSL",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{GEMINI_API_KEY}",
+    "-d",
+    "'#{schema}'"
+  ].join(' ')
+ 
+  io = IO.popen(cmd, "r")
+  output = io.read
+  io.close
+  status = $?
+  if status == 0
+    output = JSON.parse(output)
+  end
+  puts output.to_json
+end
+
+end # module Mi
+
 if ARGV[0] == "run" && ARGV[1]
   task_name = ARGV[1]
   script_path = "#{config_home}/mycli/tasks/#{task_name}/main.rb"
