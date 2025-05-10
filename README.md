@@ -1,96 +1,117 @@
-# mruby-cli-template
+# mi CLI Tool
 
-This is a minimal template for building a statically-linked CLI tool using [mruby](https://github.com/mruby/mruby). It embeds a Ruby script into a single C binary, making it portable across Unix-like systems.
+This is a command-line tool (`mi`) that utilizes `mruby` to run Ruby code, which is embedded within a statically compiled C binary. The tool interacts with a remote API (Gemini API) to generate content based on provided input.
 
 ## 🔧 Features
 
-- Embeds `main.rb` into a native binary (`mycli`)
-- Statically links `mruby` (optional, default on Linux)
-- Includes [mruby-json](https://github.com/mattn/mruby-json) gem
-- Uses `curl` and parses JSON from a remote API
-- Fully customizable via `build_config.rb`
+* Embeds Ruby code (`main.rb`) directly into a C binary.
+* Uses `mruby` for lightweight Ruby scripting.
+* Interacts with the [Gemini API](https://generativelanguage.googleapis.com/) to generate content based on custom schemas.
+* Supports customization through `main.rb` to modify how tasks are run.
 
 ## 📦 Project Structure
 
 ```
-
 .
-├── Makefile                  # Build script for compiling CLI
-├── build\_config.rb           # mruby build configuration
+├── Makefile                  # Build script for compiling the CLI tool
 ├── src/
-│   ├── main.c                # C entrypoint embedding compiled Ruby bytecode
-│   ├── main.rb               # Ruby logic to be embedded
-├── mrbgems/mruby-json/       # JSON parsing gem (submodule)
-├── mruby/                    # mruby source (submodule)
-
-````
+│   ├── main.c                # C entrypoint for running embedded Ruby bytecode
+│   └── main.rb               # Ruby script embedding logic for the tool
+└── LICENSE                   # Project license (MIT)
+```
 
 ## 🚀 Usage
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```sh
-git clone --recurse-submodules https://github.com/hoshinotsuyoshi/mruby-cli-template.git
-cd mruby-cli-template
-````
-
-If you forgot `--recurse-submodules`:
-
-```sh
-git submodule update --init --recursive
+git clone https://github.com/hoshinotsuyoshi/mi-cli.git
+cd mi-cli
 ```
 
-### 2. Build
+### 2. Build the Tool
 
 ```sh
 make
 ```
 
-This compiles:
+This will compile:
 
-* `mruby` with the specified configuration
-* `main.rb` to bytecode (`.mrb`)
-* C binary with the embedded bytecode
+* `mruby` with the default configuration.
+* The Ruby code in `main.rb` into bytecode.
+* A C binary (`mi`) that includes the Ruby bytecode.
 
-### 3. Run
+### 3. Run the Tool
+
+Once built, you can run the tool:
 
 ```sh
-./mycli
+./mi run <task_name>
 ```
 
-Expected output:
+* The `task_name` should correspond to a Ruby script (e.g., `src/mi/tasks/<task_name>/main.rb`).
+* If the task is found, it will be executed using the embedded Ruby code.
+
+### 4. Expected Output
+
+The tool makes a request to the Gemini API, processes the response, and outputs it in JSON format:
 
 ```
 Output: delectus aut autem
 Exit status: pid 12345 exit 0
 ```
 
-(Note: The actual output depends on the remote API response.)
+(Note: The actual output will vary depending on the API response.)
 
 ## 🧹 Clean
+
+To remove build artifacts and temporary files, run:
 
 ```sh
 make clean
 ```
 
-Removes build artifacts and temporary files.
+## 🧪 Customization
+
+You can modify the Ruby code in `src/main.rb` to customize the behavior of the tool.
+
+* The tool uses the Gemini API to generate content. You can modify the schema or change the API's request format.
+* To change the API key or add new environment variables, simply modify the `main.rb` file, where `GEMINI_API_KEY` is set from the environment.
+
+### Example of Customization in `main.rb`
+
+The script defines a method `Mi.run` that prepares a schema and sends a request to the Gemini API:
+
+```ruby
+def self.run(text:)
+  schema = mi_schema(text)
+  cmd = [
+    "curl",
+    "-H",
+    "'Content-Type: application/json'",
+    "-sSL",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{GEMINI_API_KEY}",
+    "-d",
+    "'#{schema}'"
+  ].join(' ')
+ 
+  io = IO.popen(cmd, "r")
+  output = io.read
+  io.close
+  status = $?
+  if status == 0
+    output = JSON.parse(output)
+  end
+  puts output.to_json
+end
+```
 
 ## 🛠 Dependencies
 
 * `clang` or another C compiler
-* `curl`
-* GNU `make`
-* Unix-like environment (macOS, Linux, etc.)
-
-## 🧪 Customization
-
-You can modify `src/main.rb` freely. Upon rebuilding, the updated Ruby code will be embedded into the binary.
-
-To add other gems, edit `build_config.rb`:
-
-```ruby
-conf.gem './mrbgems/your-custom-gem'
-```
+* `curl` for making HTTP requests
+* GNU `make` for building
+* A Unix-like environment (macOS, Linux, etc.)
 
 ## 📄 License
 

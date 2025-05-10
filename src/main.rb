@@ -72,7 +72,7 @@ end # module Mi
 
 if ARGV[0] == "run" && ARGV[1]
   task_name = ARGV[1]
-  script_path = "#{config_home}/mycli/tasks/#{task_name}/main.rb"
+  script_path = "#{config_home}/mi/tasks/#{task_name}/main.rb"
 
   if File.exist?(script_path)
     load(script_path)
@@ -82,6 +82,6 @@ if ARGV[0] == "run" && ARGV[1]
   end
 
 elsif ARGV[0] == "run"
-  puts "Usage: mycli run <task_name>"
+  puts "Usage: mi run <task_name>"
   exit 1
 end

@@ -11,11 +11,11 @@ else
   LDFLAGS := -L$(MRUBY_BUILD_DIR)/lib -lmruby -static
 endif
 
-all: mycli
+all: mi
 
-mycli: $(MRUBY_BUILD_DIR)/bin/mrbc src/main.rb.mrb
+mi: $(MRUBY_BUILD_DIR)/bin/mrbc src/main.rb.mrb
 	xxd -i src/main.rb.mrb > src/mrb_code.c
-	$(CC) src/main.c src/mrb_code.c $(CFLAGS) $(LDFLAGS) -o mycli
+	$(CC) src/main.c src/mrb_code.c $(CFLAGS) $(LDFLAGS) -o mi
 
 src/main.rb.mrb: src/main.rb
 	$(MRBC) -o src/main.rb.mrb src/main.rb
@@ -25,4 +25,4 @@ $(MRUBY_BUILD_DIR)/bin/mrbc:
 
 clean:
 	cd $(MRUBY_DIR) && rake clean
-	rm -f src/*.mrb src/mrb_code.c mycli
+	rm -f src/*.mrb src/mrb_code.c mi
