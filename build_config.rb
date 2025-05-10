@@ -2,12 +2,10 @@ MRuby::Build.new do |conf|
   toolchain :clang
 
   conf.gembox 'default'
-  # conf.gem :core => 'mruby-print'
-
-  # conf.gem './mrbgems/mruby-json'
-  conf.gem './mrbgems/mruby-json'
-  # conf.gem './mrbgems/mruby-http'
-  # conf.gem './mrbgems/mruby-mbedtls'
+  conf.gem github: 'mattn/mruby-json'
+  conf.gem github: 'iij/mruby-env'
+  conf.gem github: 'iij/mruby-mtest'
+  conf.gem github: 'iij/mruby-tempfile'
 
   conf.cc.defines << 'MRB_USE_MBEDTLS'
 

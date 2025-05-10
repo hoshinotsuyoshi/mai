@@ -1,87 +1,175 @@
 def load(path)
-  eval(File.read(path), binding, path)
-end
-
-def config_home
-  XDG_CONFIG_HOME || (HOME + "/.config")
+  eval(File.read(path), binding, path) # rubocop:disable Security/Eval
 end
 
 module Mi
-
-def self.mi_schema(text)
-  {
-    "contents": [
+  EVALUATION_PROMPT_TEMPLATE = <<~EOF
+    Return **only** a single JSON object that exactly matches the schema:
       {
-        "parts": [
-          {
-            "text": text,
-          }
-        ]
+        "main": string,          // copy-paste of the provided draft answer
+        "confidence": number,    // 0–1 (two decimals), self-assessed factual correctness
+        "fit_score": number      // 0–1 (two decimals), relevance & completeness w.r.t. the question
       }
-    ],
-    "generationConfig": {
-      "responseMimeType": "application/json",
-      "responseSchema": {
-        "type": "ARRAY",
-        "items": {
-          "type": "OBJECT",
-          "properties": {
-            "recipeName": {
-              "type": "STRING"
-            },
-            "ingredients": {
-              "type": "ARRAY",
-              "items": {
-                "type": "STRING"
-              }
+    Do **not** add keys, comments, or extra text.
+
+    # USER
+    Below is the original question and the draft answer produced in the previous step.
+
+    QUESTION:
+    <<<QUESTION_TEXT>>>
+
+    DRAFT_ANSWER (to be copied verbatim into "main"):
+    <<<MAIN_TEXT>>>
+
+    Tasks:
+    1. Evaluate the *factual correctness* of the draft answer and assign **confidence**
+       • 1 = certainly correct 0 = no confidence
+    2. Evaluate the *alignment / completeness* of the draft answer to the question and assign **fit_score**#{'  '}
+       • 1 = fully addresses all aspects 0 = unrelated
+    3. Output the final JSON object.
+       • Use exactly two decimal places for the numeric fields.
+       • Escape any internal newlines in "main" with \n so the JSON stays valid.
+       • Do **not** explain your reasoning.
+  EOF
+
+  def self.parse_input(input)
+    content = JSON.parse(input)
+    if content.fetch("confidence") < 0.8
+      [nil, "confidence is less than 0.8"]
+    elsif content.fetch("fit_score") < 0.8
+      [nil, "fit_score is less than 0.8"]
+    else
+      [content.fetch("main"), nil]
+    end
+  rescue JSON::ParserError
+    [input, nil]
+  end
+
+  def self.build_second_response_schema(first_response_schema:)
+    {
+      "type": "OBJECT",
+      "properties": {
+        "main": first_response_schema,
+        "confidence": {
+          "type": "NUMBER"
+        },
+        "fit_score": {
+          "type": "NUMBER"
+        },
+      },
+      "propertyOrdering": [
+        "main",
+        "confidence",
+        "fit_score",
+      ]
+    }
+  end
+
+  def self.mi_schema(text:, response_schema:)
+    {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": text,
             }
-          },
-          "propertyOrdering": [
-            "recipeName",
-            "ingredients"
           ]
         }
-      }
-    }
-  }.to_json
-end
-
-def self.run(text:)
-  schema = mi_schema(text)
-  cmd = [
-    "curl",
-    "-H",
-    "'Content-Type: application/json'",
-    "-sSL",
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=#{GEMINI_API_KEY}",
-    "-d",
-    "'#{schema}'"
-  ].join(' ')
- 
-  io = IO.popen(cmd, "r")
-  output = io.read
-  io.close
-  status = $?
-  if status == 0
-    output = JSON.parse(output)
+      ],
+      "generationConfig": {
+        "responseMimeType": "application/json",
+        "responseSchema": response_schema,
+      },
+    }.to_json
   end
-  puts output.to_json
-end
 
+  def self.extract_text(response_json)
+    hash = JSON.parse(response_json)
+    hash.fetch("candidates")[0].fetch("content").fetch("parts")[0].fetch("text")
+  end
+
+  def self.run(text:, response_schema:, gemini_api_key:)
+    @debug ||= true if ARGV.include?("--debug")
+    data = mi_schema(text:, response_schema:)
+    io = nil
+
+    Tempfile.open("temp") do |file|
+      file.puts data
+      file.flush
+
+      cmd = [
+        "curl",
+        "-H",
+        "'Content-Type: application/json'",
+        "-sSL",
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=#{gemini_api_key}",
+        "-d",
+        "@#{file.path}"
+      ].join(' ')
+      $stderr.puts cmd if @debug
+      unless gemini_api_key
+        $stderr.puts "GEMINI_API_KEY is blank."
+        exit 1
+      end
+      io = IO.popen(cmd, "r")
+    end
+
+    output = io.read
+    $stderr.puts output if @debug
+    io.close
+    status = $?
+    exit $? if status != 0
+    output
+  end
 end # module Mi
+
+CONFIG_HOME = ENV['XDG_CONFIG_HOME'] || (ENV['HOME'] + "/.config")
+GEMINI_API_KEY = ENV['GEMINI_API_KEY']
 
 if ARGV[0] == "run" && ARGV[1]
   task_name = ARGV[1]
-  script_path = "#{config_home}/mi/tasks/#{task_name}/main.rb"
+  script_path = "#{CONFIG_HOME}/mi/tasks/#{task_name}/main.rb"
+
+  if ARGV.include?("--no-stdin")
+    input = ["", nil]
+  else
+    input = ""
+    input += $stdin.gets until $stdin.eof?
+    input = Mi.parse_input(input)
+  end
+  input[1] && $stderr.puts(input[1]) && exit(1)
+  input = input[0]
 
   if File.exist?(script_path)
-    load(script_path)
+    # === Phase 1: Generate draft answer using the task-defined prompt ===
+    # Sends the user input through the task's prompt (from ~/.config/mi/tasks/<task>/main.rb)
+    # and gets a candidate answer from the Gemini API.
+    klass = load(script_path)
+    task = klass.new
+    question = task.text(input)
+    answer = Mi.run(
+      text: question,
+      response_schema: task.response_schema,
+      gemini_api_key: GEMINI_API_KEY,
+    )
+    answer = Mi.extract_text(answer)
+
+    # === Phase 2: Evaluate the draft answer with confidence and fit_score ===
+    # Sends the draft answer back into Gemini with a strict evaluation prompt.
+    # Gemini returns a JSON object containing:
+    #   - main: the original answer
+    #   - confidence: self-assessed factual correctness (0–1)
+    #   - fit_score: alignment and completeness to the original question (0–1)
+    second_response_schema = Mi.build_second_response_schema(first_response_schema: task.response_schema)
+    evaluate_answer = Mi.run(
+      text: Mi::EVALUATION_PROMPT_TEMPLATE.gsub("<<<QUESTION_TEXT>>>", question).gsub("<<<MAIN_TEXT>>>", answer),
+      response_schema: second_response_schema,
+      gemini_api_key: GEMINI_API_KEY,
+    )
+    puts JSON.parse(Mi.extract_text(evaluate_answer)).to_json
+    exit 0
   else
-    puts "Task '#{task_name}' not found at #{script_path}"
+    $stderr.puts "Task '#{task_name}' not found at #{script_path}"
     exit 1
   end
-
-elsif ARGV[0] == "run"
-  puts "Usage: mi run <task_name>"
-  exit 1
 end

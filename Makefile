@@ -6,10 +6,12 @@ CC := clang
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
-  LDFLAGS := -L$(MRUBY_BUILD_DIR)/lib -lmruby
+  LDFLAGS := -L$(MRUBY_BUILD_DIR)/lib -lmruby -lm
 else
-  LDFLAGS := -L$(MRUBY_BUILD_DIR)/lib -lmruby -static
+  LDFLAGS := -L$(MRUBY_BUILD_DIR)/lib -lmruby -static -lm
 endif
+
+.PHONY: all clean smoke test
 
 all: mi
 
@@ -26,3 +28,9 @@ $(MRUBY_BUILD_DIR)/bin/mrbc:
 clean:
 	cd $(MRUBY_DIR) && rake clean
 	rm -f src/*.mrb src/mrb_code.c mi
+
+smoke: mi
+	./examples/tasks/summarize_pr/main.sh
+
+test: $(MRUBY_BUILD_DIR)/bin/mruby
+	$(MRUBY_BUILD_DIR)/bin/mruby test/mi_test.rb
