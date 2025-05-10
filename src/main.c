@@ -26,9 +26,21 @@ char *build_default_path(const char *home, const char *suffix) {
   return path;
 }
 
+// Kernel#exit method
+static mrb_value mrb_kernel_exit(mrb_state *mrb, mrb_value self) {
+  mrb_int status = 0;
+  mrb_get_args(mrb, "|i", &status); // when args exist get them, otherwise 0
+  exit(status); // call C's exit
+  return mrb_nil_value(); // never launched, but needed
+}
+
 int main(int argc, char **argv) {
   mrb_state *mrb = mrb_open();
   if (!mrb) return 1;
+
+  // Define Kernel#exit
+  struct RClass *krn = mrb->kernel_module;
+  mrb_define_method(mrb, krn, "exit", mrb_kernel_exit, MRB_ARGS_OPT(1));
 
   // define ARGV (excluding argv[0])
   mrb_value args = mrb_ary_new_capa(mrb, argc > 1 ? argc - 1 : 0);
