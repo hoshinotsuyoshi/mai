@@ -1,0 +1,22 @@
+name-template: 'v$RESOLVED_VERSION' # Title of the GitHub release, e.g., "v1.2.3"
+tag-template: 'v$RESOLVED_VERSION'  # Tag name to associate with the release, e.g., "v1.2.3"
+
+categories:
+  - title: 🚀 Features               # Section for new features
+    labels: [feature]               # PRs with "feature" label will appear here
+  - title: 🐛 Fixes                  # Section for bug fixes
+    labels: [bugfix]                # PRs with "bugfix" label will appear here
+  - title: 🧰 Maintenance            # Section for non-feature changes like refactors or chores
+    labels: [chore, refactor]       # PRs with "chore" or "refactor" label will appear here
+
+change-template: '- $TITLE (#$NUMBER)'         # Format for listing each PR under a section
+change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+no-changes-template: '- No significant changes.' # Shown if there are no categorized changes
+
+version-resolver:
+  default: patch                  # If version bump type is not specified, bump the patch version (x.y.Z)
+
+template: |
+  ## What’s Changed
+
+  $CHANGES
