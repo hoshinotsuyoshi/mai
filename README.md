@@ -1,4 +1,4 @@
-# mi CLI Tool
+# mi
 
 This is a command-line tool (`mi`) that leverages the Gemini API to generate content based on user-defined tasks. It executes Ruby logic via mruby, embedded within a statically compiled binary. Tasks are dynamically loaded from user-defined scripts. These scripts are located in the user's configuration directory, allowing for highly customizable behavior without requiring external Ruby dependencies.
 
@@ -132,6 +132,90 @@ Task definitions are stored in:
 ```
 $XDG_CONFIG_HOME/mi/tasks/<task_name>/main.rb
 ```
+
+## Roadmap
+
+TBD
+
+This section outlines possible directions for the project. These ideas are exploratory and may or may not be implemented. Contributions and feedback are welcome.
+
+The following features are under consideration:
+
+* [ ] **Task Metadata Support**
+  Allow each task to define optional metadata (e.g., description, tags, version) via a `metadata` method.
+
+* [ ] **`mi list` Command**
+  Add a `mi list` subcommand to display available tasks under `$XDG_CONFIG_HOME/mi/tasks/`.
+
+* [ ] **Default Input Template Support**
+  Support defining fallback JSON input when no stdin is provided.
+
+* [ ] **Interactive Prompt Mode**
+  Add an `--interactive` flag to prompt users for required fields based on schema or task-defined questions.
+
+* [ ] **Dry-Run Mode**
+  Add a `--dry-run` flag to show the prompt and schema without calling the Gemini API.
+
+* [ ] **Response Caching**
+  Cache responses based on input + prompt to avoid redundant API calls.
+
+* [ ] **Streaming Output Option**
+  Support streaming output from Gemini (where available) for long responses.
+
+* [ ] **Inline Debug Output Toggle**
+  Provide more granular debug output control (e.g., `--verbose`).
+
+* [ ] **Built-in Task Templates**
+  Add `mi new <task_name>` to scaffold a task directory with a starter `main.rb`.
+
+* [ ] **Improved Schema Validation**
+  Provide clearer errors and suggestions when the Gemini response does not match the schema.
+
+* [ ] **Error Recovery for Gemini API Failures**
+  Add retry logic with exponential backoff for temporary errors or rate limits.
+
+* [ ] **Support for Alternative Models**
+  Allow specifying alternative Gemini models via env vars (e.g., `GEMINI_MODEL`) or task settings.
+
+* [ ] **Environment Variable Injection into Tasks**
+  Safely expose whitelisted environment variables (e.g., `ENV["MY_TOKEN"]`) inside task scripts.
+
+* [ ] **Logging and History Tracking**
+  Optionally log executed tasks, prompts, and responses to a local file.
+
+* [ ] **Task Validation Command**
+  Add `mi validate <task_name>` to check for task loading errors and malformed schemas.
+
+* [ ] **Schema Type Shorthands and Helpers**
+  Provide helpers like `Mi::Schema.string_array` to simplify schema definitions.
+
+* [ ] **GitHub-Flavored Task Sharing**
+  Allow importing tasks from GitHub or Gist via commands like `mi import gh:user/repo/task_name`.
+
+### Ideas
+
+These are looser concepts that may inspire future functionality:
+
+* [ ] **Web Frontend for Task Management**
+  Provide a browser-based UI to view, edit, and execute tasks locally.
+
+* [ ] **Visual Prompt Builder**
+  Drag-and-drop or form-based UI to build structured prompts for common task types.
+
+* [ ] **AI-Assisted Task Authoring**
+  Use the Gemini API itself to help scaffold new task logic and schema definitions.
+
+* [ ] **CLI Wizard Mode**
+  A guided flow for creating or debugging tasks interactively via the terminal.
+
+* [ ] **Multi-Step Task Execution**
+  Support chaining multiple tasks or prompts in a declarative task pipeline.
+
+* [ ] **Built-in Prompt Gallery**
+  Provide a curated set of prebuilt tasks or prompt templates for inspiration.
+
+* [ ] **Usage Analytics (Opt-In)**
+  Collect anonymous statistics on commonly used tasks or error types to guide development.
 
 ## License
 
