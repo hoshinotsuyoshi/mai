@@ -20,7 +20,7 @@ The `mi` tool takes a task name as input, loads the corresponding task definitio
 ### ✅ Recommended: Download Prebuilt Binary
 
 1. Go to the [Releases page](https://github.com/hoshinotsuyoshi/mi/releases)
-2. Download the binary for your OS (e.g., `mi-macos`, `mi-linux`)
+2. Download the binary for your OS (e.g., `mi-macos-arm64`, `mi-linux-arm64`)
 3. Make it executable:
 
    ```sh
