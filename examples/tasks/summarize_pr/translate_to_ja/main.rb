@@ -1,6 +1,6 @@
 # Translate an English PR description into natural Japanese
 
-Class.new do
+Class.new(Mi) do
   def text(input)
     $stderr.puts input # debug
 
@@ -17,7 +17,11 @@ Class.new do
     PROMPT
   end
 
-  def response_schema
-    { type: "STRING" }
-  end
+  # def response_schema
+  #   { type: "STRING" }
+  # end
+
+  # def model
+  #   "gemini-2.0-flash-lite"
+  # end
 end

@@ -1,6 +1,6 @@
 # update readme
 
-Class.new do
+Class.new(Mi) do
   def text(_input)
     # NOTE: This works only on my local machine :)
     main   = File.read('/Users/hoshino/ghq/github.com/hoshinotsuyoshi/mi/src/main.rb')
@@ -38,7 +38,7 @@ Class.new do
     string.sub('<<<src/main.rb>>>', main).sub('<<<README.md>>>', readme)
   end
 
-  def response_schema
-    { type: "STRING" }
+  def model
+    "gemini-2.5-flash-preview-04-17"
   end
 end

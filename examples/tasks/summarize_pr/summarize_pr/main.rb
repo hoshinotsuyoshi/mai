@@ -1,6 +1,6 @@
 # Summarize a Git diff into an English PR description
 
-Class.new do
+Class.new(Mi) do
   def text(input)
     <<~PROMPT
       You are a senior software engineer.
@@ -14,7 +14,11 @@ Class.new do
     PROMPT
   end
 
-  def response_schema
-    { type: "STRING" }
-  end
+  # def response_schema
+  #   { type: "STRING" }
+  # end
+
+  # def model
+  #   "gemini-2.0-flash-lite"
+  # end
 end

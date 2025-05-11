@@ -14,7 +14,12 @@ class Dir
   end
 end
 
-module Mi
+class Mi
+  SELECTABLE_MODELS = {
+    "gemini-2.0-flash" => "gemini-2.0-flash",
+    "gemini-2.0-flash-lite" => "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-preview-04-17" => "gemini-2.5-flash-preview-04-17",
+  }.freeze
   EVALUATION_PROMPT_TEMPLATE = <<~EOF
     Return **only** a single JSON object that exactly matches the schema:
       {
@@ -36,13 +41,29 @@ module Mi
     Tasks:
     1. Evaluate the *factual correctness* of the draft answer and assign **confidence**
        • 1 = certainly correct 0 = no confidence
-    2. Evaluate the *alignment / completeness* of the draft answer to the question and assign **fit_score**#{'  '}
+    2. Evaluate the *alignment / completeness* of the draft answer to the question and assign **fit_score**
        • 1 = fully addresses all aspects 0 = unrelated
     3. Output the final JSON object.
        • Use exactly two decimal places for the numeric fields.
        • Escape any internal newlines in "main" with \n so the JSON stays valid.
        • Do **not** explain your reasoning.
   EOF
+
+  # instance methods ---
+
+  def text(input)
+    raise NotImplementedError
+  end
+
+  def response_schema
+    { type: "STRING" }
+  end
+
+  def model
+    SELECTABLE_MODELS.fetch("gemini-2.0-flash-lite")
+  end
+
+  # class methods ---
 
   #: tasks_dir: String
   #: return: [String, void] | [void, String]
@@ -137,7 +158,7 @@ module Mi
     hash.fetch("candidates")[0].fetch("content").fetch("parts")[0].fetch("text")
   end
 
-  def self.run(text:, response_schema:, gemini_api_key:)
+  def self.run(text:, response_schema:, gemini_api_key:, model:)
     @debug ||= true if ARGV.include?("--debug")
     data = mi_schema(text:, response_schema:)
     io = nil
@@ -145,13 +166,14 @@ module Mi
     Tempfile.open("temp") do |file|
       file.puts data
       file.flush
+      model = SELECTABLE_MODELS.fetch(model)
 
       cmd = [
         "curl",
         "-H",
         "'Content-Type: application/json'",
         "-sSL",
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=#{gemini_api_key}",
+        "https://generativelanguage.googleapis.com/v1beta/models/#{model}:generateContent?key=#{gemini_api_key}",
         "-d",
         "@#{file.path}"
       ].join(' ')
@@ -170,7 +192,7 @@ module Mi
     exit $? if status != 0
     output
   end
-end # module Mi
+end # class Mi
 
 CONFIG_HOME = ENV['XDG_CONFIG_HOME'] || (ENV['HOME'] + "/.config")
 GEMINI_API_KEY = ENV['GEMINI_API_KEY']
@@ -209,6 +231,7 @@ if ARGV[0] == "run" && ARGV[1]
       text: question,
       response_schema: task.response_schema,
       gemini_api_key: GEMINI_API_KEY,
+      model: task.model,
     )
     answer = Mi.extract_text(answer)
 
@@ -223,6 +246,7 @@ if ARGV[0] == "run" && ARGV[1]
       text: Mi::EVALUATION_PROMPT_TEMPLATE.gsub("<<<QUESTION_TEXT>>>", question).gsub("<<<MAIN_TEXT>>>", answer),
       response_schema: second_response_schema,
       gemini_api_key: GEMINI_API_KEY,
+      model: task.model,
     )
     puts JSON.parse(Mi.extract_text(evaluate_answer)).to_json
     exit 0
