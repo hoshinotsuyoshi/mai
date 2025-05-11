@@ -1,0 +1,6 @@
+.env
+.envrc
+src/main.rb.mrb
+src/mrb_code.c
+mruby/
+vendor/
