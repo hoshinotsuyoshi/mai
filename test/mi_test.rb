@@ -6,6 +6,33 @@ load File.expand_path("./src/main.rb")
 
 module MiTest
   class MiTestCase < ::MTest::Unit::TestCase
+    def test_list_tasks_not_found
+      assert_equal(
+        [nil, "Tasks directory not found at /path/to/not_found_dir"],
+        Mi.list_tasks('/path/to/not_found_dir'),
+      )
+    end
+
+    def test_list_tasks_empty
+      Dir.mktmpdir do |dir|
+        stdout_string, stderr_string = Mi.list_tasks(dir)
+        assert(stdout_string.start_with?("No tasks found in"))
+        assert_nil(stderr_string)
+      end
+    end
+
+    def test_list_tasks
+      Dir.mktmpdir do |dir|
+        Dir.mkdir("#{dir}/1st")
+        Dir.mkdir("#{dir}/1st/2nd")
+        File.open("#{dir}/1st/2nd/main.rb", "w") { |file| file.puts '' }
+        Dir.mkdir("#{dir}/other1")
+        Dir.mkdir("#{dir}/other2")
+        File.open("#{dir}/other2/main.rb", "w") { |file| file.puts '' }
+        assert_equal(["Available tasks:\n  - 1st/2nd\n  - other2\n", nil], Mi.list_tasks(dir.to_s))
+      end
+    end
+
     def test_parse_input_valid
       input = {
         main: "ok",

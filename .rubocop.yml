@@ -17,6 +17,12 @@ Layout:
   Enabled: true
 Lint:
   Enabled: true
+Layout/ArgumentAlignment:
+  Enabled: false
+Layout/EmptyLineAfterGuardClause:
+  Enabled: false
+Layout/LeadingCommentSpace:
+  AllowRBSInlineAnnotation: true
 Lint/SymbolConversion:
   Enabled: false
 Rubycw/Rubycw:

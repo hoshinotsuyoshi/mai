@@ -2,6 +2,18 @@ def load(path)
   eval(File.read(path), binding, path) # rubocop:disable Security/Eval
 end
 
+# emulate Dir.each_child
+class Dir
+  class << self
+    def each_child(path)
+      entries(path).each do |entry|
+        next if entry == '.' || entry == '..'
+        yield entry
+      end
+    end
+  end
+end
+
 module Mi
   EVALUATION_PROMPT_TEMPLATE = <<~EOF
     Return **only** a single JSON object that exactly matches the schema:
@@ -32,6 +44,43 @@ module Mi
        • Do **not** explain your reasoning.
   EOF
 
+  #: tasks_dir: String
+  #: return: [String, void] | [void, String]
+  def self.list_tasks(tasks_dir)
+    tasks = []
+    if Dir.exist?(tasks_dir)
+      Dir.each_child(tasks_dir) do |entry|
+        path = File.join(tasks_dir, entry)
+        next unless File.directory?(path)
+        Dir.each_child(path) do |sub_entry|
+          sub_path = File.join(path, sub_entry)
+          if File.file?(sub_path) && sub_entry == 'main.rb'
+            tasks << File.basename(path)
+          end
+          next unless File.directory?(sub_path)
+          Dir.each_child(sub_path) do |sub_sub_entry|
+            if File.file?(File.join(sub_path, sub_sub_entry)) && sub_sub_entry == 'main.rb'
+              tasks << (File.basename(path) + '/' + File.basename(sub_path))
+            end
+          end
+        end
+      end
+      if tasks.empty?
+        ["No tasks found in #{tasks_dir}", nil]
+      else
+        retval = "Available tasks:\n"
+        tasks.each do |task_name|
+          retval += "  - #{task_name}\n"
+        end
+        [retval, nil]
+      end
+    else
+      [nil, "Tasks directory not found at #{tasks_dir}"]
+    end
+  end
+
+  #: input: String
+  #: return: [String, void] | [void, String]
   def self.parse_input(input)
     content = JSON.parse(input)
     if content.fetch("confidence") < 0.8
@@ -126,6 +175,15 @@ end # module Mi
 CONFIG_HOME = ENV['XDG_CONFIG_HOME'] || (ENV['HOME'] + "/.config")
 GEMINI_API_KEY = ENV['GEMINI_API_KEY']
 
+# $ mi list
+if ARGV[0] == "list"
+  tasks_dir = "#{CONFIG_HOME}/mi/tasks"
+  stdout_string, stderr_string = Mi.list_tasks(tasks_dir)
+  stderr_string && $stderr.puts(stderr_string) && exit(1)
+  stdout_string && puts(stdout_string) && exit
+end
+
+# $ mi run
 if ARGV[0] == "run" && ARGV[1]
   task_name = ARGV[1]
   script_path = "#{CONFIG_HOME}/mi/tasks/#{task_name}/main.rb"
