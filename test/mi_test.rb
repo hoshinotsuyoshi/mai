@@ -106,4 +106,6 @@ module MiTest
   end
 end
 
-MTest::Unit.new.run
+if MTest::Unit.new.run != 0
+  raise 'test failure'
+end

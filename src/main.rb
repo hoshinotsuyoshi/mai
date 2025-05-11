@@ -6,7 +6,7 @@ end
 class Dir
   class << self
     def each_child(path)
-      entries(path).each do |entry|
+      entries(path).sort.each do |entry|
         next if entry == '.' || entry == '..'
         yield entry
       end
