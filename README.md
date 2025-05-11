@@ -17,53 +17,75 @@ The `mi` tool takes a task name as input, loads the corresponding task definitio
 
 ## Installation / Usage
 
-### 1. Clone the Repository
+### ✅ Recommended: Download Prebuilt Binary
 
-```sh
-git clone https://github.com/hoshinotsuyoshi/mi.git
-cd mi
-```
+1. Go to the [Releases page](https://github.com/hoshinotsuyoshi/mi/releases)
+2. Download the binary for your OS (e.g., `mi-macos`, `mi-linux`)
+3. Make it executable:
 
-### 2. Build the Tool
+   ```sh
+   chmod +x ./mi
+   ```
 
-```sh
-make
-```
+4. (Optional) Move it to your `PATH`:
 
-This will compile:
+   ```sh
+   mv ./mi /usr/local/bin/
+   ```
 
-*   `mruby` with the default configuration.
-*   The Ruby code into bytecode.
-*   A C binary (`mi`) that includes the Ruby bytecode.
+### 🛠️ Alternative: Build from Source
 
-### 3. Set the Gemini API Key
+1. Clone the repository:
 
-Set the `GEMINI_API_KEY` environment variable with your Gemini API key. This is essential for the tool to interact with the Gemini API.
+   ```sh
+   git clone https://github.com/hoshinotsuyoshi/mi.git
+   cd mi
+   ```
 
-```sh
-export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
-```
+2. Build the binary:
 
-### 4. Run the Tool
+   ```sh
+   make
+   ```
 
-```sh
-./mi run <task_name>
-```
+   This compiles:
 
-*   The `<task_name>` should correspond to a directory under `$XDG_CONFIG_HOME/mi/tasks/` (e.g., `$XDG_CONFIG_HOME/mi/tasks/my_task/main.rb`).
-*   Input can be provided via standard input (stdin) unless the task is run with the `--no-stdin` flag.
+   * `mruby` with the default configuration
+   * The task execution logic into `mruby` bytecode
+   * A statically linked mi binary that embeds the `mruby` bytecode
 
-### 5. Task Input (via stdin, optional):
+### 🔧 Setup & Run
 
-Tasks can optionally receive input via standard input. The input should be a valid JSON object. This input is then passed to the task's `text` method.
+1. Set your Gemini API key:
 
-### 6. Expected Output
+   ```sh
+   export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+   ```
 
-The tool outputs a JSON object, which includes the final generated content (`main`), a confidence score, and a fit score. These scores reflect the tool's assessment of the generated content's accuracy and relevance.
+2. Run a task:
 
-```json
-{"main": "Generated content", "confidence": 0.95, "fit_score": 0.90}
-```
+   ```sh
+   mi run <task_name>
+   ```
+
+   * `<task_name>` must match a directory under `$XDG_CONFIG_HOME/mi/tasks/`, such as `my_task/main.rb`
+   * Input can be piped in via stdin unless using `--no-stdin`
+
+3. (Optional) Provide task input via stdin:
+
+   Input should be a valid JSON object. It will be passed to the task's `text` method.
+
+4. Output:
+
+   Output is a JSON object containing the result, confidence score, and fit score:
+
+   ```json
+   {
+     "main": "Generated content",
+     "confidence": 0.95,
+     "fit_score": 0.90
+   }
+   ```
 
 ## Task Customization
 
