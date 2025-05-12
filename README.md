@@ -1,141 +1,143 @@
 # mai
 
-`mai` is a command-line interface tool designed to interact with the Gemini API for generating content based on user-defined tasks. It executes custom Ruby logic via mruby, which is embedded directly within a statically compiled binary. This approach allows tasks to be dynamically loaded from user configuration scripts, providing flexibility without requiring an external Ruby installation.
+## NAME
 
-## Overview
+mai - CLI tool for executing Gemini API tasks defined by user scripts with embedded mruby
 
-The `mai` tool functions by taking a specified task name, locating and loading the corresponding Ruby script from the user's configuration directory. This script defines the prompt and schema for the initial interaction with the Gemini API. `mai` sends the user input (or lack thereof) through the task's defined prompt, retrieves a draft answer from the API, and then performs a second API call to evaluate the draft answer for factual correctness and relevance. The final output is a structured JSON object containing the evaluated answer and scores.
+## SYNOPSIS
 
-## Key Features
+```sh
+mai list
+mai run <task_name> [--no-stdin]
+```
 
-*   **Task-Based Generation:** Generates content based on modular, user-defined tasks.
-*   **Dynamic Task Loading:** Automatically discovers and loads task definitions from Ruby scripts located in `$XDG_CONFIG_HOME/mai/tasks/`.
-*   **Embedded mruby Execution:** Runs task logic written in Ruby using an embedded mruby interpreter, resulting in a self-contained, statically compiled binary.
-*   **Gemini API Integration:** Interacts with the Google Gemini API using task-defined prompts and schemas.
-*   **Two-Phase Evaluation:** Implements a built-in second API call to evaluate the initial generated content for confidence and fit score.
-*   **Customizable Prompts & Schemas:** Tasks define the specific text prompt and expected response schema for the first API call.
-*   **Task Listing:** Includes a command to list all available tasks discovered in the configuration directory.
+## DESCRIPTION
 
-## Installation / Usage
+`mai` is a command-line tool designed to interact with the Gemini API for generating content based on user-defined tasks. It executes custom Ruby logic via `mruby`, which is embedded directly within a statically compiled binary. This design allows for tasks to be dynamically loaded from configuration scripts without requiring an external Ruby installation.
 
-### ✅ Recommended: Download Prebuilt Binary
+`mai` works by taking a task name, locating the corresponding Ruby script in `$XDG_CONFIG_HOME/mai/tasks/`, and executing it using embedded mruby. The task script defines a prompt and response schema for communicating with the Gemini API. `mai` makes an initial API call to generate a response, followed by a second call to evaluate that response for factual correctness and relevance. The final output is a structured JSON object with the main result and evaluation scores.
 
-1.  Visit the [Releases page](https://github.com/hoshinotsuyoshi/mai/releases).
-2.  Download the appropriate binary for your operating system and architecture.
-3.  Make the binary executable:
+## INSTALLATION
 
-    ```sh
-    chmod +x ./mai
-    ```
+### Download Prebuilt Binary
 
-4.  (Optional) Move the binary to a directory included in your system's `PATH`, such as `/usr/local/bin/`:
+1. Visit the [Releases page](https://github.com/hoshinotsuyoshi/mai/releases).
+2. Download the binary for your OS and architecture.
+3. Make the binary executable:
 
-    ```sh
-    mv ./mai /usr/local/bin/
-    ```
+   ```sh
+   chmod +x ./mai
+   ```
 
-### 🛠️ Alternative: Build from Source
+4. (Optional) Move it to your system PATH:
 
-1.  Ensure you have a C compiler (like `clang`) and GNU `make` installed.
-2.  Clone the repository:
+   ```sh
+   mv ./mai /usr/local/bin/
+   ```
 
-    ```sh
-    git clone https://github.com/hoshinotsuyoshi/mai.git
-    cd mai
-    ```
+### Build from Source
 
-3.  Build the binary:
+```sh
+git clone https://github.com/hoshinotsuyoshi/mai.git
+cd mai
+make
+```
 
-    ```sh
-    make
-    ```
+This compiles `mruby`, the Ruby bytecode, and links everything into a single binary.
 
-    This process compiles mruby, the core Ruby logic into bytecode, and links everything into a single `mai` executable.
+## USAGE
 
-### 🔧 Setup & Run
+### Setup
 
-1.  Obtain a Gemini API key and set it as the `GEMINI_API_KEY` environment variable:
+Set your Gemini API key as an environment variable:
 
-    ```sh
-    export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
-    ```
+```sh
+export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+```
 
-2.  List available tasks:
+### List Tasks
 
-    ```sh
-    mai list
-    ```
+```sh
+mai list
+```
 
-    This command searches `$XDG_CONFIG_HOME/mai/tasks/` for task definitions (directories containing `main.rb`). Tasks in subdirectories (e.g., `category/task_name`) are listed with their full path.
+Lists available tasks under `$XDG_CONFIG_HOME/mai/tasks/`. Subdirectory paths are supported.
 
-3.  Run a task:
+### Run a Task
 
-    ```sh
-    mai run <task_name>
-    ```
+```sh
+mai run <task_name> [--no-stdin]
+```
 
-    *   `<task_name>` corresponds to the name of a directory (or path within subdirectories) under `$XDG_CONFIG_HOME/mai/tasks/` that contains a `main.rb` script.
-    *   By default, the tool reads input from stdin. Use the `--no-stdin` flag if the task does not require external input.
-    *   If stdin is provided as a JSON object containing `confidence` and `fit_score` keys, the tool will exit with an error if either value is less than 0.8. Otherwise, the raw input is passed to the task's `text` method.
+- `<task_name>` refers to a directory containing `main.rb`.
+- Input is read from stdin unless `--no-stdin` is specified.
+- If stdin includes a JSON object with `confidence` or `fit_score` below 0.8, an error is raised.
 
-4.  Output:
+### Output
 
-    The tool outputs a JSON object to stdout representing the evaluated result from the Gemini API:
+```json
+{
+  "main": "The generated and evaluated content.",
+  "confidence": 0.95,
+  "fit_score": 0.90
+}
+```
 
-    ```json
-    {
-      "main": "The generated and evaluated content.",
-      "confidence": 0.95,  // Self-assessed factual correctness (0-1)
-      "fit_score": 0.90     // Relevance and completeness w.r.t. question (0-1)
-    }
-    ```
+## TASK CUSTOMIZATION
 
-## Task Customization
+Tasks are Ruby scripts defined at:
 
-Tasks are defined by Ruby scripts located in `$XDG_CONFIG_HOME/mai/tasks/<task_name>/main.rb`. Each `main.rb` file must define a class that provides the core logic for interacting with the Gemini API.
+```
+$XDG_CONFIG_HOME/mai/tasks/<task_name>/main.rb
+```
 
-The class within the script must implement the following methods:
+### Required Methods
 
-*   `text(input)`: This method receives the input read from stdin (if any) as a string. It should return the final text prompt string that will be sent to the Gemini API in the first call.
-*   `response_schema`: This method must return a JSON schema object defining the expected structure of the response from the *first* Gemini API call.
-*   `(Optional) model`: This method can return a string specifying the desired Gemini model to use for this task, overriding the default (`gemini-2.0-flash-lite`). The model must be one of the internally supported options.
+- `text(input)`: Returns a prompt string for the Gemini API.
+- `response_schema`: Returns a JSON schema object for validating the API response.
 
-### Example Task Definition (`$XDG_CONFIG_HOME/mai/tasks/summarize_article/main.rb`)
+### Optional Method
+
+- `model`: Returns a Gemini model name (e.g. `gemini-2.0-flash-lite`).
+
+### Example
 
 ```ruby
 Class.new(Mai) do
   # Defines the prompt sent to the Gemini API.
   # 'input' contains the text read from stdin.
   def text(input)
-    "Summarize the following article concisely:
-
-#{input}"
+    "Summarize the following article concisely:\n\n#{input}"
   end
 
-  # Defines the expected structure of the API response.
-  # Used for schema validation in the first call and building the evaluation prompt.
   def response_schema
-    {
-      "type": "STRING"
-    }
+    { "type": "STRING" }
   end
 
-  # (Optional) Specify a different model for this task.
   # def model
   #   "gemini-2.0-flash"
   # end
 end
 ```
 
-## Requirements / Dependencies
+## FEATURES
 
-*   A Unix-like operating system (macOS, Linux, etc.)
-*   A C compiler (like `clang`)
-*   GNU `make`
-*   `curl` command-line tool
-*   A valid Gemini API key (set as the `GEMINI_API_KEY` environment variable)
+- Task-based modular system
+- Embedded Ruby execution with mruby
+- Two-phase Gemini API interaction
+- JSON schema-based validation
+- Automatic task discovery
+- Optional model selection per task
 
-## Directory Structure
+## REQUIREMENTS
+
+- Unix-like OS (Linux, macOS)
+- C compiler (e.g. clang)
+- GNU `make`
+- `curl`
+- Google Gemini API key
+
+## DIRECTORY STRUCTURE
 
 ```
 .                          (mai source repository)
@@ -245,6 +247,6 @@ These are looser concepts that may inspire future functionality:
 * [ ] **Usage Analytics (Opt-In)**
   Collect anonymous statistics on commonly used tasks or error types to guide development.
 
-## License
+## LICENSE
 
 MIT
