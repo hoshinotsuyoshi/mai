@@ -1,6 +1,6 @@
 # Translate an English PR description into natural Japanese
 
-Class.new(Mi) do
+Class.new(Mai) do
   def text(input)
     $stderr.puts input # debug
 

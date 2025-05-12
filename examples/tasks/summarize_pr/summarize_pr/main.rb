@@ -1,6 +1,6 @@
 # Summarize a Git diff into an English PR description
 
-Class.new(Mi) do
+Class.new(Mai) do
   def text(input)
     <<~PROMPT
       You are a senior software engineer.

@@ -4,18 +4,18 @@ end
 
 load File.expand_path("./src/main.rb")
 
-module MiTest
-  class MiTestCase < ::MTest::Unit::TestCase
+module MaiTest
+  class MaiTestCase < ::MTest::Unit::TestCase
     def test_list_tasks_not_found
       assert_equal(
         [nil, "Tasks directory not found at /path/to/not_found_dir"],
-        Mi.list_tasks('/path/to/not_found_dir'),
+        Mai.list_tasks('/path/to/not_found_dir'),
       )
     end
 
     def test_list_tasks_empty
       Dir.mktmpdir do |dir|
-        stdout_string, stderr_string = Mi.list_tasks(dir)
+        stdout_string, stderr_string = Mai.list_tasks(dir)
         assert(stdout_string.start_with?("No tasks found in"))
         assert_nil(stderr_string)
       end
@@ -29,7 +29,7 @@ module MiTest
         Dir.mkdir("#{dir}/other1")
         Dir.mkdir("#{dir}/other2")
         File.open("#{dir}/other2/main.rb", "w") { |file| file.puts '' }
-        assert_equal(["Available tasks:\n  - 1st/2nd\n  - other2\n", nil], Mi.list_tasks(dir.to_s))
+        assert_equal(["Available tasks:\n  - 1st/2nd\n  - other2\n", nil], Mai.list_tasks(dir.to_s))
       end
     end
 
@@ -39,7 +39,7 @@ module MiTest
         confidence: 0.9,
         fit_score: 0.95
       }.to_json
-      result, error = Mi.parse_input(input)
+      result, error = Mai.parse_input(input)
       assert_equal("ok", result)
       assert_nil(error)
     end
@@ -50,7 +50,7 @@ module MiTest
         confidence: 0.5,
         fit_score: 0.95
       }.to_json
-      result, error = Mi.parse_input(input)
+      result, error = Mai.parse_input(input)
       assert_nil(result)
       assert_equal("confidence is less than 0.8", error)
     end
@@ -61,13 +61,13 @@ module MiTest
         confidence: 0.9,
         fit_score: 0.5
       }.to_json
-      result, error = Mi.parse_input(input)
+      result, error = Mai.parse_input(input)
       assert_nil(result)
       assert_equal("fit_score is less than 0.8", error)
     end
 
     def test_parse_input_json_error
-      result, error = Mi.parse_input("this is not json")
+      result, error = Mai.parse_input("this is not json")
       assert_equal("this is not json", result)
       assert_nil(error)
     end
@@ -84,11 +84,11 @@ module MiTest
           }
         ]
       }.to_json
-      assert_equal("Hello!", Mi.extract_text(json))
+      assert_equal("Hello!", Mai.extract_text(json))
     end
 
     def test_build_second_response_schema_structure
-      schema = Mi.build_second_response_schema(first_response_schema: { "type": "STRING" })
+      schema = Mai.build_second_response_schema(first_response_schema: { "type": "STRING" })
       assert_equal("OBJECT", schema[:type])
       assert_equal(["main", "confidence", "fit_score"], schema[:propertyOrdering])
       assert_equal({ "type": "STRING" }, schema[:properties][:main])
@@ -96,8 +96,8 @@ module MiTest
       assert_equal({ "type": "NUMBER" }, schema[:properties][:fit_score])
     end
 
-    def test_mi_schema_json_output
-      json_str = Mi.mi_schema(text: "hello", response_schema: { "type": "STRING" })
+    def test_mai_schema_json_output
+      json_str = Mai.mai_schema(text: "hello", response_schema: { "type": "STRING" })
       data = JSON.parse(json_str)
       assert_equal("hello", data["contents"][0]["parts"][0]["text"])
       assert_equal("application/json", data["generationConfig"]["responseMimeType"])

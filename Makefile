@@ -13,11 +13,11 @@ endif
 
 .PHONY: all clean smoke test
 
-all: mi
+all: mai
 
-mi: $(MRUBY_BUILD_DIR)/bin/mrbc src/main.rb.mrb
+mai: $(MRUBY_BUILD_DIR)/bin/mrbc src/main.rb.mrb
 	xxd -i src/main.rb.mrb > src/mrb_code.c
-	$(CC) src/main.c src/mrb_code.c $(CFLAGS) $(LDFLAGS) -o mi
+	$(CC) src/main.c src/mrb_code.c $(CFLAGS) $(LDFLAGS) -o mai
 
 src/main.rb.mrb: src/main.rb
 	$(MRBC) -o src/main.rb.mrb src/main.rb
@@ -27,10 +27,10 @@ $(MRUBY_BUILD_DIR)/bin/mrbc:
 
 clean:
 	cd $(MRUBY_DIR) && rake clean
-	rm -f src/*.mrb src/mrb_code.c mi
+	rm -f src/*.mrb src/mrb_code.c mai
 
-smoke: mi
+smoke: mai
 	./examples/tasks/summarize_pr/main.sh
 
 test: $(MRUBY_BUILD_DIR)/bin/mruby
-	$(MRUBY_BUILD_DIR)/bin/mruby test/mi_test.rb
+	$(MRUBY_BUILD_DIR)/bin/mruby test/mai_test.rb

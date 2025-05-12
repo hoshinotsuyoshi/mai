@@ -25,15 +25,15 @@ jobs:
       - name: Rename binary
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-24.04-arm" ]]; then
-            mv mi mi-linux-arm64
+            mv mai mai-linux-arm64
           else
-            mv mi mi-macos-arm64
+            mv mai mai-macos-arm64
           fi
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         with:
           files: |
-            mi-*
+            mai-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

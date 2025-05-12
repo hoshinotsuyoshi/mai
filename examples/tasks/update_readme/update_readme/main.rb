@@ -1,10 +1,10 @@
 # update readme
 
-Class.new(Mi) do
+Class.new(Mai) do
   def text(_input)
     # NOTE: This works only on my local machine :)
-    main   = File.read('/Users/hoshino/ghq/github.com/hoshinotsuyoshi/mi/src/main.rb')
-    readme = File.read('/Users/hoshino/ghq/github.com/hoshinotsuyoshi/mi/README.md')
+    main   = File.read('/Users/hoshino/ghq/github.com/hoshinotsuyoshi/mai/src/main.rb')
+    readme = File.read('/Users/hoshino/ghq/github.com/hoshinotsuyoshi/mai/README.md')
 
     string = <<~'PROMPT'
       Based on the following information, rewrite the README for this tool in clear, concise, and technically accurate English.

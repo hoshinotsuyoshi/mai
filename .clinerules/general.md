@@ -8,7 +8,7 @@
 │   ├── main.c                # C entrypoint for running mruby bytecode
 │   └── main.rb               # mruby script embedding logic for the tool
 └── test
-    └── mi_test.rb            # test
+    └── mai_test.rb           # test
 ```
 
 ## src/main.rb
@@ -25,11 +25,11 @@
 
 ### Implementation Policy
 
-- Implement as a unit as much as possible as a singleton method within `module Mi`.
+- Implement as a unit as much as possible as a singleton method within `module Mai`.
   - For testability, do not call exit within singleton methods.
   - For testability, do not call ARGV within singleton methods.
 
-## Testing (test/mi_test.rb)
+## Testing (test/mai_test.rb)
 
 - Tests are performed using MTest by loading (evaluating) src/main.rb
-- Tests the singleton methods of the `Mi` module.
+- Tests the singleton methods of the `Mai` module.

@@ -14,7 +14,7 @@ class Dir
   end
 end
 
-class Mi
+class Mai
   SELECTABLE_MODELS = {
     "gemini-2.0-flash" => "gemini-2.0-flash",
     "gemini-2.0-flash-lite" => "gemini-2.0-flash-lite",
@@ -135,7 +135,7 @@ class Mi
     }
   end
 
-  def self.mi_schema(text:, response_schema:)
+  def self.mai_schema(text:, response_schema:)
     {
       "contents": [
         {
@@ -160,7 +160,7 @@ class Mi
 
   def self.run(text:, response_schema:, gemini_api_key:, model:)
     @debug ||= true if ARGV.include?("--debug")
-    data = mi_schema(text:, response_schema:)
+    data = mai_schema(text:, response_schema:)
     io = nil
 
     Tempfile.open("temp") do |file|
@@ -192,48 +192,48 @@ class Mi
     exit $? if status != 0
     output
   end
-end # class Mi
+end # class Mai
 
 CONFIG_HOME = ENV['XDG_CONFIG_HOME'] || (ENV['HOME'] + "/.config")
 GEMINI_API_KEY = ENV['GEMINI_API_KEY']
 
-# $ mi list
+# $ mai list
 if ARGV[0] == "list"
-  tasks_dir = "#{CONFIG_HOME}/mi/tasks"
-  stdout_string, stderr_string = Mi.list_tasks(tasks_dir)
+  tasks_dir = "#{CONFIG_HOME}/mai/tasks"
+  stdout_string, stderr_string = Mai.list_tasks(tasks_dir)
   stderr_string && $stderr.puts(stderr_string) && exit(1)
   stdout_string && puts(stdout_string) && exit
 end
 
-# $ mi run
+# $ mai run
 if ARGV[0] == "run" && ARGV[1]
   task_name = ARGV[1]
-  script_path = "#{CONFIG_HOME}/mi/tasks/#{task_name}/main.rb"
+  script_path = "#{CONFIG_HOME}/mai/tasks/#{task_name}/main.rb"
 
   if ARGV.include?("--no-stdin")
     input = ["", nil]
   else
     input = ""
     input += $stdin.gets until $stdin.eof?
-    input = Mi.parse_input(input)
+    input = Mai.parse_input(input)
   end
   input[1] && $stderr.puts(input[1]) && exit(1)
   input = input[0]
 
   if File.exist?(script_path)
     # === Phase 1: Generate draft answer using the task-defined prompt ===
-    # Sends the user input through the task's prompt (from ~/.config/mi/tasks/<task>/main.rb)
+    # Sends the user input through the task's prompt (from ~/.config/mai/tasks/<task>/main.rb)
     # and gets a candidate answer from the Gemini API.
     klass = load(script_path)
     task = klass.new
     question = task.text(input)
-    answer = Mi.run(
+    answer = Mai.run(
       text: question,
       response_schema: task.response_schema,
       gemini_api_key: GEMINI_API_KEY,
       model: task.model,
     )
-    answer = Mi.extract_text(answer)
+    answer = Mai.extract_text(answer)
 
     # === Phase 2: Evaluate the draft answer with confidence and fit_score ===
     # Sends the draft answer back into Gemini with a strict evaluation prompt.
@@ -241,14 +241,14 @@ if ARGV[0] == "run" && ARGV[1]
     #   - main: the original answer
     #   - confidence: self-assessed factual correctness (0–1)
     #   - fit_score: alignment and completeness to the original question (0–1)
-    second_response_schema = Mi.build_second_response_schema(first_response_schema: task.response_schema)
-    evaluate_answer = Mi.run(
-      text: Mi::EVALUATION_PROMPT_TEMPLATE.gsub("<<<QUESTION_TEXT>>>", question).gsub("<<<MAIN_TEXT>>>", answer),
+    second_response_schema = Mai.build_second_response_schema(first_response_schema: task.response_schema)
+    evaluate_answer = Mai.run(
+      text: Mai::EVALUATION_PROMPT_TEMPLATE.gsub("<<<QUESTION_TEXT>>>", question).gsub("<<<MAIN_TEXT>>>", answer),
       response_schema: second_response_schema,
       gemini_api_key: GEMINI_API_KEY,
       model: task.model,
     )
-    puts JSON.parse(Mi.extract_text(evaluate_answer)).to_json
+    puts JSON.parse(Mai.extract_text(evaluate_answer)).to_json
     exit 0
   else
     $stderr.puts "Task '#{task_name}' not found at #{script_path}"
