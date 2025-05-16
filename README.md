@@ -94,11 +94,15 @@ $XDG_CONFIG_HOME/mai/tasks/<task_name>/main.rb
 ### Required Methods
 
 - `text(input)`: Returns a prompt string for the Gemini API.
-- `response_schema`: Returns a JSON schema object for validating the API response.
 
 ### Optional Method
 
-- `model`: Returns a Gemini model name (e.g. `gemini-2.0-flash-lite`).
+- `response_schema`: Returns a JSON schema object for validating the API response.
+- `model`: Returns the name of the Gemini model to use (e.g., `gemini-2.0-flash-lite`).
+  - Choose one of the following:
+    - `gemini-2.0-flash`
+    - `gemini-2.0-flash-lite`
+    - `gemini-2.5-flash-preview-04-17`
 
 ### Example
 
@@ -110,9 +114,9 @@ Class.new(Mai) do
     "Summarize the following article concisely:\n\n#{input}"
   end
 
-  def response_schema
-    { "type": "STRING" }
-  end
+  # def response_schema
+  #   { "type": "STRING" }
+  # end
 
   # def model
   #   "gemini-2.0-flash"
